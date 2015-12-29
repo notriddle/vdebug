@@ -135,7 +135,7 @@ class EvalResponse(ContextGetResponse):
     def __init__(self,response,cmd,cmd_args,api):
         try:
             ContextGetResponse.__init__(self,response,cmd,cmd_args,api)
-        except DBGPError, e:
+        except DBGPError as e:
             if int(e.args[1]) == 206:
                 raise EvalError()
             else:
@@ -151,7 +151,7 @@ class EvalResponse(ContextGetResponse):
     def get_code(self):
         cmd = self.get_cmd_args()
         parts = cmd.split('-- ')
-        return base64.decodestring(parts[1])
+        return str(base64.decodestring(bytes(parts[1],"utf-8")),"utf-8")
 
 
 class BreakpointSetResponse(Response):
@@ -291,7 +291,7 @@ class Api:
         """Tell the debugger to start or resume
         execution."""
         code_enc = base64.encodestring(code)
-        args = '-- %s' % code_enc
+        args = '-- %s' % str(code_enc,"utf-8")
 
         """ The python engine incorrectly requires length.
         if self.language == 'python':
@@ -418,7 +418,7 @@ class Connection:
     def open(self):
         """Listen for a connection from the debugger. Listening for the actual
         connection is handled by self.listen()."""
-        print 'Waiting for a connection (Ctrl-C to cancel, this message will self-destruct in ',self.timeout,' seconds...)'
+        print('Waiting for a connection (Ctrl-C to cancel, this message will self-destruct in ',self.timeout,' seconds...)')
         serv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
             serv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -553,7 +553,7 @@ class ContextProperty:
                 if node.text is None:
                     self.value = ""
                 else:
-                    self.value = base64.decodestring(node.text)
+                    self.value = str(base64.decodestring(bytes(node.text,"utf-8")),"utf-8")
             elif not self.is_uninitialized() \
                     and not self.has_children:
                 self.value = node.text
@@ -586,7 +586,7 @@ class ContextProperty:
         n = node.find('%s%s' %(self.ns, name))
         if n is not None and n.text is not None:
             if n.get('encoding') == 'base64':
-                val = base64.decodestring(n.text)
+                val = str(base64.decodestring(bytes(n.text,"utf-8")),"utf-8")
             else:
                 val = n.text
         else:
